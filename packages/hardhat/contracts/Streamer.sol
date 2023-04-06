@@ -44,16 +44,16 @@ contract Streamer is Ownable {
         );
         bytes32 prefixedHashed = keccak256(prefixed);
 
-        /*
-        Checkpoint 5: Recover earnings
+        address signerAddress = ecrecover(prefixedHashed, voucher.sig.v, voucher.sig.r, voucher.sig.s);
 
-        The service provider would like to cash out their hard earned ether.
-            - use ecrecover on prefixedHashed and the supplied signature
-            - require that the recovered signer has a running channel with balances[signer] > v.updatedBalance
-            - calculate the payment when reducing balances[signer] to v.updatedBalance
-            - adjust the channel balance, and pay the contract owner. (Get the owner address withthe `owner()` function)
-            - emit the Withdrawn event
-        */
+        require(balances[signerAddress] > voucher.updatedBalance, "Signer has no open channel with you or not enough funds in the channel. Cannot redeem voucher.");
+
+        balances[signerAddress] -= voucher.updatedBalance;
+
+        (bool success, ) = owner().call{value: voucher.updatedBalance}("");
+        require(success, "Withdrawal failed.");
+
+        emit Withdrawn(owner(), voucher.updatedBalance);
     }
 
     /*
