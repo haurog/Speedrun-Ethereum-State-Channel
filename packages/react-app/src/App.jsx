@@ -300,7 +300,7 @@ function App(props) {
   /*
     The off-chain app:
     ==================
-    - The provider sends wisdom through the channel, the client returns signed 
+    - The provider sends wisdom through the channel, the client returns signed
         vouchers which the provider can redeem at their convenience
     - The client pays per character. This type of transaction throughput is infeasible on L1 because of:
       - gas costs per transaction dwarfing the cost of each transaction
@@ -309,7 +309,7 @@ function App(props) {
 
   /*
     Client perspective:
-    - clients participate in a single channel - the client-streamer channel.    
+    - clients participate in a single channel - the client-streamer channel.
   */
 
   /*
@@ -330,7 +330,7 @@ function App(props) {
   }
 
 
-  
+
   //This is the wisdome the client is paying for. It'd better be good.
   let recievedWisdom = "";
 
@@ -466,15 +466,16 @@ function App(props) {
       // a string representation of the BigNumber for transit over the network
       const updatedBalance = ethers.BigNumber.from(voucher.data.updatedBalance);
 
-      /*
-       *  Checkpoint 4:
-       *
-       *  currently, this function recieves and stores vouchers uncritically.
-       *
-       *  recreate the packed, hashed, and arrayified message from reimburseService (above),
-       *  and then use ethers.utils.verifyMessage() to confirm that voucher signer was
-       *  `clientAddress`. (If it wasn't, log some error message and return).
-      */
+      const packed = ethers.utils.solidityPack(["uint256"], [updatedBalance]);
+      const hashed = ethers.utils.keccak256(packed);
+      const arrayified = ethers.utils.arrayify(hashed);
+      const signerAddress = ethers.utils.verifyMessage(arrayified, voucher.data.signature);
+      // console.log("updateBalance: ", updatedBalance, "hashed: ", hashed, "arrayified: ", arrayified, "signerAddress: ", signerAddress, "clientAddress: ", signerAddress)
+
+      if (clientAddress != signerAddress) {
+        console.log("Warning: signer is not client, cannot process voucher.");
+        return;
+      }
 
       const existingVoucher = vouchers()[clientAddress];
 
@@ -916,7 +917,7 @@ function App(props) {
 
           {/*
             this scaffolding is full of commonly used components.
-            
+
             this <Contract/> component will automatically parse your ABI
             and give you a form to interact with it locally
           */}
