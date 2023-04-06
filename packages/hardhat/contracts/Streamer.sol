@@ -48,12 +48,25 @@ contract Streamer is Ownable {
 
         require(balances[signerAddress] > voucher.updatedBalance, "Signer has no open channel with you or not enough funds in the channel. Cannot redeem voucher.");
 
-        balances[signerAddress] -= voucher.updatedBalance;
+        uint256 payment = balances[signerAddress] - voucher.updatedBalance;
 
-        (bool success, ) = owner().call{value: voucher.updatedBalance}("");
+        balances[signerAddress] = voucher.updatedBalance;
+
+        (bool success, ) = owner().call{value: payment}("");
         require(success, "Withdrawal failed.");
 
         emit Withdrawn(owner(), voucher.updatedBalance);
+
+        /*
+        Checkpoint 5: Recover earnings
+
+        The service provider would like to cash out their hard earned ether.
+            - use ecrecover on prefixedHashed and the supplied signature
+            - require that the recovered signer has a running channel with balances[signer] > v.updatedBalance
+            - calculate the payment when reducing balances[signer] to v.updatedBalance
+            - adjust the channel balance, and pay the contract owner. (Get the owner address withthe `owner()` function)
+            - emit the Withdrawn event
+        */
     }
 
     /*
