@@ -69,6 +69,12 @@ contract Streamer is Ownable {
         */
     }
 
+    function challengeChannel() public {
+        require(balances[msg.sender] > 0, "You do not have an open channel.");
+        canCloseAt[msg.sender] = block.timestamp + 30;
+        emit Challenged(msg.sender);
+    }
+
     /*
     Checkpoint 6a: Challenge the channel
 
@@ -77,6 +83,19 @@ contract Streamer is Ownable {
     - updates canCloseAt[msg.sender] to some future time
     - emits a Challenged event
     */
+
+    function defundChannel() public {
+        require(canCloseAt[msg.sender] > 0, "There is no channel with a closing time.");
+        require(canCloseAt[msg.sender] < block.timestamp, "Deadline to close the channel has no been reached yet.");
+
+        uint256 payment = balances[msg.sender];
+        balances[msg.sender] = 0;
+
+        (bool success, ) = msg.sender.call{value: payment}("");
+        require(success, "Sending funds failed.");
+
+        emit Closed(msg.sender);
+    }
 
     /*
     Checkpoint 6b: Close the channel
